@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManiacGaming - Aim Trainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --fg: #ffffff;
+            --accent: #ff3333;
+            --accent-glow: #ff6666;
+            --dim: #666666;
+            --darker: #050505;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--fg);
+            overflow: hidden;
+            height: 100vh;
+            cursor: none;
+        }
+
+        /* TRIANGLE PATTERN BACKGROUND */
+        .triangle-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        #game-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Crosshair Cursor */
+        #crosshair {
+            position: fixed;
+            width: 30px;
+            height: 30px;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-line {
+            position: absolute;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .crosshair-h {
+            width: 20px;
+            height: 2px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-v {
+            width: 2px;
+            height: 20px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .crosshair-dot {
+            width: 4px;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 5px var(--accent-glow);
+        }
+
+        /* HUD */
+        #hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.8);
+        }
+
+        .hud-item {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .hud-label {
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+        }
+
+        .hud-value {
+            color: var(--accent);
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        /* Menu Overlay */
+        #menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #menu-overlay.hidden {
+            display: none;
+        }
+
+        .menu-title {
+            font-size: 4rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: -2px;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 30px rgba(255, 51, 51, 0.8);
+        }
+
+        .menu-subtitle {
+            font-size: 1.2rem;
+            color: var(--dim);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 3rem;
+        }
+
+        .menu-button {
+            background: transparent;
+            border: 2px solid var(--accent);
+            color: var(--accent);
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-family: 'Courier New', monospace;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin: 10px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-button:hover {
+            background: var(--accent);
+            color: var(--bg);
+            box-shadow: 0 0 20px var(--accent-glow);
+            transform: scale(1.05);
+        }
+
+        .menu-button:active {
+            transform: scale(0.95);
+        }
+
+        /* Game Over Screen */
+        #game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 10, 0.95);
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #game-over.visible {
+            display: flex;
+        }
+
+        .game-over-title {
+            font-size: 3rem;
+            color: var(--accent);
+            margin-bottom: 2rem;
+            text-shadow: 0 0 30px rgba(255, 51, 51, 0.8);
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 3rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-label {
+            color: var(--dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .stat-value {
+            color: var(--accent);
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+
+        /* Target styles */
+        .target {
+            position: absolute;
+            border-radius: 50%;
+            border: 3px solid var(--accent);
+            background: radial-gradient(circle, rgba(255, 51, 51, 0.3) 0%, rgba(255, 51, 51, 0.1) 50%, transparent 100%);
+            box-shadow: 0 0 20px var(--accent-glow);
+            cursor: crosshair;
+            animation: pulse 1s ease-in-out infinite;
+            z-index: 10;
+            pointer-events: auto;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+        }
+
+        .target-center {
+            position: absolute;
+            width: 30%;
+            height: 30%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 10px var(--accent-glow);
+            pointer-events: none;
+        }
+
+        /* Hit marker */
+        .hit-marker {
+            position: fixed;
+            width: 60px;
+            height: 60px;
+            pointer-events: none;
+            z-index: 1000;
+            transform: translate(-50%, -50%);
+        }
+
+        .hit-line {
+            position: absolute;
+            width: 30px;
+            height: 3px;
+            background: var(--accent);
+            top: 50%;
+            left: 50%;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .hit-line-1 {
+            transform: translate(-50%, -50%) rotate(45deg);
+        }
+
+        .hit-line-2 {
+            transform: translate(-50%, -50%) rotate(-45deg);
+        }
+
+        @keyframes hitMarkerFade {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+            50% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(1.5);
+            }
+        }
+
+        /* Timer bar */
+        #timer-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--darker);
+            z-index: 99;
+        }
+
+        #timer-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 100%;
+            transition: width 0.1s linear;
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+    </style>
+</head>
+<body>
+    <!-- Triangle Background -->
+    <div class="triangle-background">
+        <canvas id="triangle-canvas"></canvas>
+    </div>
+
+    <!-- Timer Bar -->
+    <div id="timer-bar">
+        <div id="timer-fill"></div>
+    </div>
+
+    <!-- HUD -->
+    <div id="hud">
+        <div class="hud-item">
+            <span class="hud-label">SCORE</span>
+            <span class="hud-value" id="score">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">COMBO</span>
+            <span class="hud-value" id="combo">0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">TIME</span>
+            <span class="hud-value" id="time">30</span>
+        </div>
+    </div>
+
+    <!-- Crosshair -->
+    <div id="crosshair">
+        <div class="crosshair-line crosshair-h"></div>
+        <div class="crosshair-line crosshair-v"></div>
+        <div class="crosshair-dot"></div>
+    </div>
+
+    <!-- Game Canvas -->
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Menu Overlay -->
+    <div id="menu-overlay">
+        <div class="menu-title">AIM TRAINER</div>
+        <div class="menu-subtitle">MANIACGAMING.ONLINE</div>
+        <button class="menu-button" id="start-btn">START GAME</button>
+        <button class="menu-button" id="back-btn" onclick="window.history.back()">BACK TO MENU</button>
+    </div>
+
+    <!-- Game Over Screen -->
+    <div id="game-over">
+        <div class="game-over-title">TRAINING COMPLETE</div>
+        <div class="stats-container">
+            <div class="stat-item">
+                <div class="stat-label">Final Score</div>
+                <div class="stat-value" id="final-score">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Accuracy</div>
+                <div class="stat-value" id="accuracy">0%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Max Combo</div>
+                <div class="stat-value" id="max-combo">0</div>
+            </div>
+        </div>
+        <button class="menu-button" id="restart-btn">PLAY AGAIN</button>
+        <button class="menu-button" onclick="window.history.back()">BACK TO MENU</button>
+    </div>
+
+    <script>
+        // ========== TRIANGLE BACKGROUND ==========
+        const triCanvas = document.getElementById('triangle-canvas');
+        const triCtx = triCanvas.getContext('2d');
+
+        function resizeTriangleCanvas() {
+            triCanvas.width = window.innerWidth;
+            triCanvas.height = window.innerHeight;
+            drawTriangles();
+        }
+
+        function drawTriangles() {
+            triCtx.clearRect(0, 0, triCanvas.width, triCanvas.height);
+            const spacing = 60;
+            
+            for (let y = 0; y < triCanvas.height + spacing; y += spacing) {
+                for (let x = 0; x < triCanvas.width + spacing; x += spacing) {
+                    const offset = (y / spacing) % 2 === 0 ? 0 : spacing / 2;
+                    drawTriangle(x + offset, y, 30);
+                }
+            }
+        }
+
+        function drawTriangle(x, y, size) {
+            triCtx.strokeStyle = '#4a1a1a';
+            triCtx.lineWidth = 1.5;
+            triCtx.beginPath();
+            triCtx.moveTo(x, y - size / 2);
+            triCtx.lineTo(x + size / 2, y + size / 2);
+            triCtx.lineTo(x - size / 2, y + size / 2);
+            triCtx.closePath();
+            triCtx.stroke();
+        }
+
+        window.addEventListener('resize', resizeTriangleCanvas);
+        resizeTriangleCanvas();
+
+        // ========== AIM TRAINER GAME ==========
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        const crosshair = document.getElementById('crosshair');
+        const menuOverlay = document.getElementById('menu-overlay');
+        const gameOverScreen = document.getElementById('game-over');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let gameActive = false;
+        let score = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let timeLeft = 30;
+        let targets = [];
+        let shots = 0;
+        let hits = 0;
+        let gameTimer = null;
+        let spawnTimer = null;
+
+        // Mouse tracking for crosshair
+        document.addEventListener('mousemove', (e) => {
+            crosshair.style.left = e.clientX + 'px';
+            crosshair.style.top = e.clientY + 'px';
+        });
+
+        // Target class
+        class Target {
+            constructor() {
+                this.size = 60 + Math.random() * 40;
+                this.x = this.size + Math.random() * (canvas.width - this.size * 2);
+                this.y = this.size + Math.random() * (canvas.height - this.size * 2);
+                this.lifetime = 2000; // 2 seconds
+                this.createdAt = Date.now();
+                this.element = this.createElement();
+            }
+
+            createElement() {
+                const div = document.createElement('div');
+                div.className = 'target';
+                div.style.width = this.size + 'px';
+                div.style.height = this.size + 'px';
+                div.style.left = this.x + 'px';
+                div.style.top = this.y + 'px';
+                
+                const center = document.createElement('div');
+                center.className = 'target-center';
+                div.appendChild(center);
+                
+                div.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.hit(e);
+                });
+                document.body.appendChild(div);
+                
+                return div;
+            }
+
+            hit(event) {
+                if (!gameActive) return;
+                
+                shots++; // Count this shot
+                hits++;
+                score += Math.floor(100 * (1 + combo * 0.1));
+                combo++;
+                maxCombo = Math.max(maxCombo, combo);
+                
+                updateHUD();
+                
+                // Use click position for hit marker
+                const x = event ? event.clientX : this.x + this.size / 2;
+                const y = event ? event.clientY : this.y + this.size / 2;
+                showHitMarker(x, y);
+                
+                this.destroy();
+                
+                // Spawn new target immediately
+                spawnTarget();
+            }
+
+            update() {
+                const age = Date.now() - this.createdAt;
+                if (age > this.lifetime) {
+                    combo = 0;
+                    updateHUD();
+                    this.destroy();
+                    return false;
+                }
+                return true;
+            }
+
+            destroy() {
+                if (this.element && this.element.parentNode) {
+                    this.element.remove();
+                }
+                const index = targets.indexOf(this);
+                if (index > -1) {
+                    targets.splice(index, 1);
+                }
+            }
+        }
+
+        function spawnTarget() {
+            if (!gameActive) return;
+            targets.push(new Target());
+        }
+
+        function showHitMarker(x, y) {
+            const marker = document.createElement('div');
+            marker.className = 'hit-marker';
+            marker.style.left = x + 'px';
+            marker.style.top = y + 'px';
+            
+            const line1 = document.createElement('div');
+            line1.className = 'hit-line hit-line-1';
+            const line2 = document.createElement('div');
+            line2.className = 'hit-line hit-line-2';
+            
+            marker.appendChild(line1);
+            marker.appendChild(line2);
+            document.body.appendChild(marker);
+            
+            marker.style.animation = 'hitMarkerFade 0.4s ease-out forwards';
+            setTimeout(() => marker.remove(), 400);
+        }
+
+        function updateHUD() {
+            document.getElementById('score').textContent = score;
+            document.getElementById('combo').textContent = combo;
+            document.getElementById('time').textContent = timeLeft;
+        }
+
+        function startGame() {
+            gameActive = true;
+            score = 0;
+            combo = 0;
+            maxCombo = 0;
+            timeLeft = 30;
+            shots = 0;
+            hits = 0;
+            targets = [];
+            
+            menuOverlay.classList.add('hidden');
+            gameOverScreen.classList.remove('visible');
+            updateHUD();
+            
+            // Spawn initial targets
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => spawnTarget(), i * 300);
+            }
+            
+            // Game timer
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateHUD();
+                
+                const timerFill = document.getElementById('timer-fill');
+                timerFill.style.width = (timeLeft / 30 * 100) + '%';
+                
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+            
+            // Target spawn timer
+            spawnTimer = setInterval(() => {
+                if (targets.length < 5) {
+                    spawnTarget();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            clearInterval(gameTimer);
+            clearInterval(spawnTimer);
+            
+            // Clear all targets
+            targets.forEach(target => target.destroy());
+            targets = [];
+            
+            // Show results
+            const accuracy = shots > 0 ? Math.round((hits / shots) * 100) : 0;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('accuracy').textContent = accuracy + '%';
+            document.getElementById('max-combo').textContent = maxCombo;
+            
+            gameOverScreen.classList.add('visible');
+        }
+
+        // Track shots on target clicks (already counted in hit())
+        document.addEventListener('click', (e) => {
+            if (gameActive && !e.target.closest('.target') && !e.target.closest('.menu-button')) {
+                shots++; // Miss
+            }
+        });
+
+        // Update target lifetimes
+        setInterval(() => {
+            if (gameActive) {
+                targets.forEach(target => target.update());
+            }
+        }, 100);
+
+        // Start button
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        // Prevent context menu
+        document.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
+</body>
+</html>

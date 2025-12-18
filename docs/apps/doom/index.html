@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doom Raycaster</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: #000;
+            font-family: monospace;
+            overflow: hidden;
+        }
+        #game {
+            border: 2px solid #333;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #0f0;
+            font-size: 14px;
+            text-shadow: 2px 2px 4px #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <div id="info">WASD/Arrows: Move | Mouse: Look | Click to lock pointer</div>
+
+    <script>
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 800;
+        canvas.height = 600;
+
+        // Game map (1 = wall, 0 = empty)
+        const map = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,1,1,0,0,0,0,1,1,1,0,0,1],
+            [1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,1,1,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,0,1,1,1,0,0,0,0,1,1,1,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
+        ];
+
+        // Player
+        let player = {
+            x: 2.5,
+            y: 2.5,
+            angle: 0,
+            speed: 0.05,
+            rotSpeed: 0.03
+        };
+
+        // Input
+        const keys = {};
+        let mouseLocked = false;
+
+        document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        canvas.addEventListener('click', () => {
+            canvas.requestPointerLock();
+        });
+
+        document.addEventListener('pointerlockchange', () => {
+            mouseLocked = document.pointerLockElement === canvas;
+        });
+
+        document.addEventListener('mousemove', e => {
+            if (mouseLocked) {
+                player.angle += e.movementX * 0.002;
+            }
+        });
+
+        function castRay(angle) {
+            const sin = Math.sin(angle);
+            const cos = Math.cos(angle);
+            
+            let x = player.x;
+            let y = player.y;
+            
+            for (let i = 0; i < 20; i += 0.1) {
+                x += cos * 0.1;
+                y += sin * 0.1;
+                
+                const mapX = Math.floor(x);
+                const mapY = Math.floor(y);
+                
+                if (mapX < 0 || mapX >= map[0].length || mapY < 0 || mapY >= map.length) {
+                    return { dist: i, side: 0 };
+                }
+                
+                if (map[mapY][mapX] === 1) {
+                    const side = Math.abs(sin) > Math.abs(cos) ? 1 : 0;
+                    return { dist: i, side };
+                }
+            }
+            
+            return { dist: 20, side: 0 };
+        }
+
+        function render() {
+            // Clear
+            ctx.fillStyle = '#333';
+            ctx.fillRect(0, 0, canvas.width, canvas.height / 2);
+            ctx.fillStyle = '#666';
+            ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+            
+            const fov = Math.PI / 3;
+            const numRays = canvas.width;
+            
+            for (let i = 0; i < numRays; i++) {
+                const rayAngle = player.angle - fov / 2 + (fov * i) / numRays;
+                const { dist, side } = castRay(rayAngle);
+                
+                const correctedDist = dist * Math.cos(rayAngle - player.angle);
+                const wallHeight = (canvas.height / correctedDist) * 0.5;
+                
+                const brightness = Math.max(0, 255 - dist * 12);
+                const color = side === 0 ? brightness : brightness * 0.7;
+                
+                ctx.fillStyle = `rgb(${color}, ${color * 0.5}, ${color * 0.3})`;
+                ctx.fillRect(i, canvas.height / 2 - wallHeight / 2, 1, wallHeight);
+            }
+        }
+
+        function update() {
+            const moveSpeed = player.speed;
+            const sin = Math.sin(player.angle);
+            const cos = Math.cos(player.angle);
+            
+            let newX = player.x;
+            let newY = player.y;
+            
+            if (keys['w'] || keys['arrowup']) {
+                newX += cos * moveSpeed;
+                newY += sin * moveSpeed;
+            }
+            if (keys['s'] || keys['arrowdown']) {
+                newX -= cos * moveSpeed;
+                newY -= sin * moveSpeed;
+            }
+            if (keys['a']) {
+                newX += sin * moveSpeed;
+                newY -= cos * moveSpeed;
+            }
+            if (keys['d']) {
+                newX -= sin * moveSpeed;
+                newY += cos * moveSpeed;
+            }
+            
+            if (!mouseLocked) {
+                if (keys['arrowleft']) player.angle -= player.rotSpeed;
+                if (keys['arrowright']) player.angle += player.rotSpeed;
+            }
+            
+            // Collision detection
+            const mapX = Math.floor(newX);
+            const mapY = Math.floor(newY);
+            
+            if (mapX >= 0 && mapX < map[0].length && mapY >= 0 && mapY < map.length) {
+                if (map[mapY][mapX] === 0) {
+                    player.x = newX;
+                    player.y = newY;
+                }
+            }
+        }
+
+        function gameLoop() {
+            update();
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        gameLoop();
+    </script>
+</body>
+</html>
