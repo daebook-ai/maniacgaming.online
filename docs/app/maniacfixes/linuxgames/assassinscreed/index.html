@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linux Gaming Fixes - ManiacGaming</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0a0a;
+            --fg: #ffffff;
+            --accent: #ff3333;
+            --accent-glow: #ff6666;
+            --dim: #666666;
+            --darker: #050505;
+            --code-bg: #1a1a1a;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.6;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        /* TRIANGLE PATTERN BACKGROUND */
+        .triangle-background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+        
+        .triangle-pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .triangle {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            transition: all 0.3s ease;
+        }
+        
+        .triangle svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+        
+        .triangle polygon {
+            stroke: #4a1a1a;
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        header {
+            margin-bottom: 4rem;
+            border-bottom: 1px solid var(--dim);
+            padding-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 300;
+            letter-spacing: -2px;
+            margin-bottom: 0.5rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            text-shadow: 0 0 30px rgba(255, 51, 51, 0.5);
+        }
+
+        .tagline {
+            color: var(--dim);
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .stats-bar {
+            background: var(--darker);
+            border: 1px solid var(--accent);
+            padding: 1.5rem;
+            margin-bottom: 3rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1.5rem;
+            text-align: center;
+        }
+
+        .stat {
+            border-right: 1px solid var(--dim);
+        }
+
+        .stat:last-child {
+            border-right: none;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 0.3rem;
+            font-weight: 300;
+        }
+
+        .stat-label {
+            color: var(--dim);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .fix-entry {
+            background: var(--darker);
+            border: 1px solid var(--dim);
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fix-entry::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            transition: left 0.5s;
+        }
+
+        .fix-entry:hover::before {
+            left: 100%;
+        }
+
+        .fix-entry:hover {
+            border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(255, 51, 51, 0.2);
+        }
+
+        .fix-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--dim);
+        }
+
+        .fix-title {
+            font-size: 1.8rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .fix-date {
+            color: var(--dim);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .fix-meta {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--dim);
+            font-size: 0.9rem;
+        }
+
+        .meta-label {
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .problem-section,
+        .solution-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            color: var(--accent);
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .section-content {
+            color: var(--fg);
+            line-height: 1.8;
+            margin-bottom: 1rem;
+        }
+
+        .code-block {
+            background: var(--code-bg);
+            border: 1px solid var(--dim);
+            border-left: 3px solid var(--accent);
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+        }
+
+        .code-block code {
+            color: var(--accent-glow);
+        }
+
+        .step-list {
+            list-style: none;
+            counter-reset: step-counter;
+        }
+
+        .step-list li {
+            counter-increment: step-counter;
+            margin-bottom: 1.5rem;
+            padding-left: 3rem;
+            position: relative;
+        }
+
+        .step-list li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: var(--accent);
+            color: var(--bg);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .note-box {
+            background: rgba(255, 51, 51, 0.1);
+            border-left: 3px solid var(--accent);
+            padding: 1rem 1.5rem;
+            margin: 1rem 0;
+            color: var(--fg);
+        }
+
+        .note-box strong {
+            color: var(--accent);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-top: 1.5rem;
+        }
+
+        .tag {
+            background: var(--code-bg);
+            border: 1px solid var(--dim);
+            padding: 0.3rem 0.8rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--dim);
+        }
+
+        footer {
+            margin-top: 4rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--dim);
+            text-align: center;
+        }
+
+        .powered {
+            color: var(--dim);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .powered a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .powered a:hover {
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .fix-header {
+                flex-direction: column;
+            }
+
+            .stats-bar {
+                grid-template-columns: 1fr;
+            }
+
+            .stat {
+                border-right: none;
+                border-bottom: 1px solid var(--dim);
+                padding-bottom: 1rem;
+            }
+
+            .stat:last-child {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="triangle-background">
+        <div class="triangle-pattern"></div>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>Linux Gaming Fixes</h1>
+            <p class="tagline">battle-tested solutions</p>
+        </header>
+
+        <div class="stats-bar">
+            <div class="stat">
+                <span class="stat-value">01</span>
+                <span class="stat-label">fixes logged</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">100%</span>
+                <span class="stat-label">success rate</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">Ubuntu</span>
+                <span class="stat-label">24.04 LTS</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value">Proton</span>
+                <span class="stat-label">steam runtime</span>
+            </div>
+        </div>
+
+        <!-- FIX ENTRY 1: Assassin's Creed Freezing -->
+        <div class="fix-entry">
+            <div class="fix-header">
+                <h2 class="fix-title">Assassin's Creed: Director's Cut - Freezing Fix</h2>
+                <span class="fix-date">Dec 31, 2025</span>
+            </div>
+
+            <div class="fix-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Game:</span>
+                    <span>Assassin's Creed: Director's Cut</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Steam AppID:</span>
+                    <span>15100</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Platform:</span>
+                    <span>Proton/Steam</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Difficulty:</span>
+                    <span>Intermediate</span>
+                </div>
+            </div>
+
+            <div class="problem-section">
+                <h3 class="section-title">◉ Problem</h3>
+                <p class="section-content">
+                    Game freezes every 30-60 seconds for 3-5 seconds during gameplay. Audio continues but video locks up. 
+                    The freezing is caused by the game attempting to contact defunct Ubisoft servers (gconnect.ubi.com) 
+                    for statistics upload. The connection times out, causing periodic stuttering.
+                </p>
+            </div>
+
+            <div class="solution-section">
+                <h3 class="section-title">◉ Solution: Hex Edit Executable</h3>
+                <p class="section-content">
+                    The most effective fix is to hex edit the game executable, nullifying the server connection string. 
+                    This prevents the game from attempting any connection, eliminating timeout delays.
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>Install hex editor</strong>
+                        <div class="code-block"><code>sudo apt install hexedit</code></div>
+                    </li>
+                    <li>
+                        <strong>Navigate to game directory</strong>
+                        <div class="code-block"><code>cd ~/.steam/steam/steamapps/common/"Assassins Creed"/</code></div>
+                    </li>
+                    <li>
+                        <strong>Backup original executable</strong>
+                        <div class="code-block"><code>cp AssassinsCreed_Dx9.exe AssassinsCreed_Dx9.exe.backup
+cp AssassinsCreed_Dx10.exe AssassinsCreed_Dx10.exe.backup</code></div>
+                    </li>
+                    <li>
+                        <strong>Open executable in hex editor</strong>
+                        <div class="code-block"><code>hexedit AssassinsCreed_Dx9.exe</code></div>
+                    </li>
+                    <li>
+                        <strong>Search for server string</strong>
+                        <p class="section-content">Press <code>Tab</code> to switch to ASCII view, then press <code>/</code> to search. Type:</p>
+                        <div class="code-block"><code>gconnect.ubi.com</code></div>
+                    </li>
+                    <li>
+                        <strong>Replace with null characters</strong>
+                        <p class="section-content">Replace each character of "gconnect.ubi.com" (17 chars) with a period (.) which represents null:</p>
+                        <div class="code-block"><code>gconnect.ubi.com  →  .................</code></div>
+                    </li>
+                    <li>
+                        <strong>Save and exit</strong>
+                        <p class="section-content">Press <code>Ctrl+X</code>, confirm with <code>Y</code></p>
+                    </li>
+                    <li>
+                        <strong>Repeat for DX10 version if needed</strong>
+                        <div class="code-block"><code>hexedit AssassinsCreed_Dx10.exe</code></div>
+                        <p class="section-content">Follow steps 5-7 again</p>
+                    </li>
+                </ol>
+
+                <div class="note-box">
+                    <strong>Important:</strong> Do NOT delete characters, only REPLACE them. The file must maintain the same size. 
+                    Each character must be replaced with a period (.) to properly null the string.
+                </div>
+
+                <div class="note-box">
+                    <strong>Why this works:</strong> The game has "gconnect.ubi.com" hardcoded in the binary. By nullifying this string, 
+                    the connection fails instantly instead of waiting for a TCP timeout (3-5 seconds). The hosts file method doesn't work 
+                    because it only prevents DNS lookup but still waits for connection timeout.
+                </div>
+            </div>
+
+            <div class="solution-section">
+                <h3 class="section-title">◉ Alternative: Hosts File Method (Less Effective)</h3>
+                <p class="section-content">
+                    This method reduces but doesn't eliminate freezing. Only use if hex editing isn't possible.
+                </p>
+
+                <div class="code-block"><code># Edit Proton prefix hosts file:
+cd ~/.steam/steam/steamapps/compatdata/15100/pfx/drive_c/windows/system32/drivers/etc/
+nano hosts
+
+# Add these lines:
+127.0.0.1 gconnect.ubi.com
+127.0.0.1 uts.ubi.com</code></div>
+            </div>
+
+            <div class="tags">
+                <span class="tag">Proton</span>
+                <span class="tag">Hex Edit</span>
+                <span class="tag">Network Fix</span>
+                <span class="tag">Ubisoft</span>
+                <span class="tag">Stuttering</span>
+            </div>
+        </div>
+
+        <!-- Template for future fixes - commented out -->
+        <!--
+        <div class="fix-entry">
+            <div class="fix-header">
+                <h2 class="fix-title">[Game Name] - [Issue]</h2>
+                <span class="fix-date">[Date]</span>
+            </div>
+
+            <div class="fix-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Game:</span>
+                    <span>[Game Name]</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Steam AppID:</span>
+                    <span>[AppID]</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Platform:</span>
+                    <span>[Platform]</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Difficulty:</span>
+                    <span>[Easy/Intermediate/Advanced]</span>
+                </div>
+            </div>
+
+            <div class="problem-section">
+                <h3 class="section-title">◉ Problem</h3>
+                <p class="section-content">
+                    [Description of the problem]
+                </p>
+            </div>
+
+            <div class="solution-section">
+                <h3 class="section-title">◉ Solution</h3>
+                <p class="section-content">
+                    [Description of solution]
+                </p>
+
+                <ol class="step-list">
+                    <li>
+                        <strong>[Step title]</strong>
+                        <div class="code-block"><code>[commands]</code></div>
+                    </li>
+                </ol>
+
+                <div class="note-box">
+                    <strong>Note:</strong> [Important information]
+                </div>
+            </div>
+
+            <div class="tags">
+                <span class="tag">[Tag1]</span>
+                <span class="tag">[Tag2]</span>
+            </div>
+        </div>
+        -->
+
+    </div>
+
+    <footer>
+        <p class="powered">powered by <a href="https://lempyra.com">Lempyrλ</a></p>
+    </footer>
+    
+    <script>
+        function generateTrianglePattern() {
+            const container = document.querySelector('.triangle-pattern');
+            container.innerHTML = '';
+            
+            const triWidth = 40;
+            const triHeight = 40;
+            const cols = Math.ceil(window.innerWidth / triWidth) + 2;
+            const rows = Math.ceil(window.innerHeight / triHeight) + 2;
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const triangle = document.createElement('div');
+                    triangle.className = 'triangle';
+                    triangle.dataset.col = col;
+                    triangle.dataset.row = row;
+                    
+                    const offsetX = col * triWidth;
+                    const offsetY = row * triHeight;
+                    
+                    triangle.style.left = offsetX + 'px';
+                    triangle.style.top = offsetY + 'px';
+                    
+                    const isUpward = (col + row) % 2 === 0;
+                    triangle.dataset.ordered = isUpward ? 'up' : 'down';
+                    
+                    const randomOrientation = Math.random() > 0.5;
+                    const points = randomOrientation
+                        ? "20,5 38,35 2,35"
+                        : "20,35 38,5 2,5";
+                    
+                    const randomInitialRotation = Math.random() * 360;
+                    triangle.style.transform = `rotate(${randomInitialRotation}deg)`;
+                    
+                    triangle.innerHTML = `
+                        <svg viewBox="0 0 40 40">
+                            <polygon points="${points}" />
+                        </svg>
+                    `;
+                    
+                    container.appendChild(triangle);
+                }
+            }
+            
+            startWavePulse();
+        }
+        
+        function startWavePulse() {
+            const triangles = document.querySelectorAll('.triangle');
+            const themeColor = '#ff3333';
+            const baseColor = '#4a1a1a';
+            
+            function createWave(startCol, startRow) {
+                triangles.forEach(triangle => {
+                    const col = parseInt(triangle.dataset.col);
+                    const row = parseInt(triangle.dataset.row);
+                    
+                    const distance = Math.sqrt(
+                        Math.pow(col - startCol, 2) + 
+                        Math.pow(row - startRow, 2)
+                    );
+                    
+                    setTimeout(() => {
+                        const polygon = triangle.querySelector('polygon');
+                        
+                        const orderedOrientation = triangle.dataset.ordered;
+                        const orderedPoints = orderedOrientation === 'up'
+                            ? "20,5 38,35 2,35"
+                            : "20,35 38,5 2,5";
+                        
+                        polygon.style.transition = 'all 0.3s ease-out';
+                        polygon.setAttribute('points', orderedPoints);
+                        polygon.setAttribute('stroke', themeColor);
+                        polygon.setAttribute('stroke-width', '3');
+                        polygon.setAttribute('fill', themeColor);
+                        polygon.setAttribute('fill-opacity', '0.3');
+                        triangle.style.transform = 'scale(1.2) rotate(0deg)';
+                        triangle.style.opacity = '1';
+                        
+                        setTimeout(() => {
+                            const randomRotation = Math.random() * 360;
+                            const randomOrientation = Math.random() > 0.5;
+                            const randomPoints = randomOrientation
+                                ? "20,5 38,35 2,35"
+                                : "20,35 38,5 2,5";
+                            
+                            polygon.style.transition = 'all 0.5s ease-in';
+                            polygon.setAttribute('points', randomPoints);
+                            polygon.setAttribute('stroke', baseColor);
+                            polygon.setAttribute('stroke-width', '1.5');
+                            polygon.setAttribute('fill', 'none');
+                            polygon.setAttribute('fill-opacity', '0');
+                            triangle.style.transform = `scale(1) rotate(${randomRotation}deg)`;
+                            triangle.style.opacity = '0.5';
+                        }, 600);
+                    }, distance * 50);
+                });
+            }
+            
+            document.addEventListener('click', (e) => {
+                const triWidth = 40;
+                const triHeight = 40;
+                const clickCol = Math.floor(e.clientX / triWidth);
+                const clickRow = Math.floor(e.clientY / triHeight);
+                
+                const colors = ['#ff3333', '#ff5555', '#dd2222', '#ff4444'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                triangles.forEach(triangle => {
+                    const col = parseInt(triangle.dataset.col);
+                    const row = parseInt(triangle.dataset.row);
+                    
+                    const distance = Math.sqrt(
+                        Math.pow(col - clickCol, 2) + 
+                        Math.pow(row - clickRow, 2)
+                    );
+                    
+                    setTimeout(() => {
+                        const polygon = triangle.querySelector('polygon');
+                        
+                        const orderedOrientation = triangle.dataset.ordered;
+                        const orderedPoints = orderedOrientation === 'up'
+                            ? "20,5 38,35 2,35"
+                            : "20,35 38,5 2,5";
+                        
+                        polygon.style.transition = 'all 0.3s ease-out';
+                        polygon.setAttribute('points', orderedPoints);
+                        polygon.setAttribute('stroke', randomColor);
+                        polygon.setAttribute('stroke-width', '3.5');
+                        polygon.setAttribute('fill', randomColor);
+                        polygon.setAttribute('fill-opacity', '0.4');
+                        triangle.style.transform = 'scale(1.3) rotate(0deg)';
+                        triangle.style.opacity = '1';
+                        
+                        setTimeout(() => {
+                            const randomRotation = Math.random() * 360;
+                            const randomOrientation = Math.random() > 0.5;
+                            const randomPoints = randomOrientation
+                                ? "20,5 38,35 2,35"
+                                : "20,35 38,5 2,5";
+                            
+                            polygon.style.transition = 'all 0.5s ease-in';
+                            polygon.setAttribute('points', randomPoints);
+                            polygon.setAttribute('stroke', baseColor);
+                            polygon.setAttribute('stroke-width', '1.5');
+                            polygon.setAttribute('fill', 'none');
+                            polygon.setAttribute('fill-opacity', '0');
+                            triangle.style.transform = `scale(1) rotate(${randomRotation}deg)`;
+                            triangle.style.opacity = '0.5';
+                        }, 600);
+                    }, distance * 50);
+                });
+            });
+            
+            function scheduleNextWave() {
+                const interval = 2500 + Math.random() * 3500;
+                setTimeout(() => {
+                    const startCol = Math.floor(Math.random() * 25);
+                    const startRow = Math.floor(Math.random() * 20);
+                    createWave(startCol, startRow);
+                    scheduleNextWave();
+                }, interval);
+            }
+            
+            scheduleNextWave();
+            const startCol = Math.floor(Math.random() * 25);
+            const startRow = Math.floor(Math.random() * 20);
+            createWave(startCol, startRow);
+        }
+        
+        window.addEventListener('load', generateTrianglePattern);
+        window.addEventListener('resize', generateTrianglePattern);
+    </script>
+</body>
+</html>
